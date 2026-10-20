@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Você Cairia Nessa? — Simulador de Segurança Digital</title>
+<style>
+  :root {
+    --bg: #f4f7fb;
+    --surface: #ffffff;
+    --text: #182235;
+    --muted: #526078;
+    --primary: #194b8f;
+    --primary-hover: #12396d;
+    --border: #d7dfeb;
+    --good-bg: #e7f7ed;
+    --good-text: #14532d;
+    --warn-bg: #fff4dc;
+    --warn-text: #713f12;
+    --shadow: 0 8px 24px rgba(24, 34, 53, .08);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: Arial, Helvetica, sans-serif; line-height: 1.6;
+    font-size: 18px;
+  }
+  body.high-contrast {
+    --bg: #000; --surface: #000; --text: #fff; --muted: #f0f0f0;
+    --primary: #ffeb00; --primary-hover: #ffe000; --border: #fff;
+    --good-bg: #003d1b; --good-text: #fff; --warn-bg: #4a2500; --warn-text: #fff;
+    --shadow: none;
+  }
+  body.high-contrast .brand-mark { color: #000; }
+  body.high-contrast .primary-btn { color: #000; }
+  body.high-contrast .choice-btn { background: #000; }
+  header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+  }
+  .header-inner { max-width: 1040px; margin: auto; display:flex; gap:14px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+  .brand { display:flex; gap:12px; align-items:center; }
+  .brand-mark { display:grid; place-items:center; width:46px; height:46px; border-radius:14px; background:#dceafe; color:#194b8f; font-weight:800; font-size:22px; }
+  .brand-name { font-weight:800; line-height:1.2; }
+  .brand-sub { color:var(--muted); font-size:.85em; }
+  .tools { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  button { font:inherit; cursor:pointer; }
+  .tool-btn, .secondary-btn {
+    border:1px solid var(--border); border-radius:10px; padding:10px 14px; min-height:44px; min-width:44px;
+    background:var(--surface); color:var(--text); font-size:.9em; font-weight:700;
+  }
+  .tool-btn:hover, .secondary-btn:hover { outline:2px solid var(--primary); outline-offset:1px; }
+  main { max-width:1040px; margin:28px auto 56px; padding:0 18px; }
+  .hero {
+    background:linear-gradient(130deg, #163f78, #2476a8); color:#fff;
+    padding:28px; border-radius:22px; box-shadow:var(--shadow); margin-bottom:20px;
+  }
+  .hero-kicker { text-transform:uppercase; letter-spacing:1.3px; font-size:.8em; font-weight:800; opacity:.9; }
+  h1 { font-size:clamp(28px, 5vw, 42px); line-height:1.12; margin:8px 0 12px; }
+  .hero p { max-width:700px; margin:0; font-size:1.05em; }
+  .hero-note { margin-top:18px; font-size:.9em; opacity:.95; }
+  .layout { display:grid; grid-template-columns: minmax(0, 1.65fr) minmax(230px, .8fr); gap:20px; align-items:start; }
+  .panel { background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:22px; box-shadow:var(--shadow); }
+  .panel h2 { font-size:1.3em; line-height:1.25; margin:0 0 12px; }
+  .muted { color:var(--muted); }
+  .tag { display:inline-block; border:1px solid var(--border); border-radius:999px; padding:4px 10px; font-size:.85em; font-weight:800; margin:0 5px 8px 0; }
+  .progress-top { display:flex; justify-content:space-between; gap:12px; font-size:.9em; font-weight:700; margin:0 0 8px; }
+  .progress-track { height:10px; background:var(--border); border-radius:999px; overflow:hidden; margin-bottom:20px; }
+  .progress-fill { height:100%; width:0; background:#2d8b57; transition:width .2s ease; }
+  .scenario-message { margin:18px 0; }
+  .from { font-size:.85em; color:var(--muted); margin-bottom:6px; }
+  .bub { background:var(--bg); border-left:5px solid var(--primary); border-radius:10px; padding:16px; font-size:1.05em; }
+  .bub.scam { margin-top:10px; border-left-color:#b45309; background:var(--warn-bg); color:var(--warn-text); }
+  .fake { font-size:.85em; color:var(--muted); margin-top:6px; }
+  .choice-list { display:grid; gap:10px; margin-top:16px; }
+  .choice-btn {
+    text-align:left; padding:15px 16px; border:2px solid var(--border);
+    border-radius:12px; background:var(--surface); color:var(--text); font-weight:700;
+  }
+  .choice-btn:hover, .choice-btn:focus-visible { border-color:var(--primary); outline:3px solid transparent; }
+  .choice-btn:focus-visible, button:focus-visible { outline:3px solid #f59e0b; outline-offset:3px; }
+  .feedback { border-radius:12px; padding:16px; margin-top:18px; border:1px solid var(--border); }
+  .feedback.good { background:var(--good-bg); color:var(--good-text); }
+  .feedback.warn { background:var(--warn-bg); color:var(--warn-text); }
+  .feedback h3 { margin:0 0 8px; font-size:1.15em; }
+  .feedback p { margin:7px 0; }
+  .actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:18px; }
+  .primary-btn { border:0; border-radius:11px; padding:12px 17px; background:var(--primary); color:#fff; font-weight:800; }
+  .primary-btn:hover { background:var(--primary-hover); }
+  .primary-btn:disabled { opacity:.45; cursor:not-allowed; }
+  .side-section + .side-section { margin-top:22px; padding-top:20px; border-top:1px solid var(--border); }
+  .side-section h3 { font-size:1em; margin:0 0 8px; }
+  .mini-list { padding-left:20px; margin:8px 0 0; }
+  .mini-list li { margin:6px 0; }
+  .question { border:1px solid var(--border); border-radius:12px; padding:12px; margin:10px 0; }
+  .question strong { display:block; margin-bottom:4px; }
+  .scenario-nav { display:grid; gap:8px; }
+  .nav-btn { display:flex; gap:10px; align-items:center; text-align:left; padding:10px; border:1px solid var(--border); border-radius:10px; background:var(--surface); color:var(--text); }
+  .nav-btn.active { border:2px solid var(--primary); }
+  .nav-number { flex:0 0 30px; height:30px; display:grid; place-items:center; border-radius:9px; background:var(--bg); font-weight:800; }
+  .nav-label { font-size:.9em; font-weight:700; }
+  .small { font-size:.85em; }
+  footer { max-width:1040px; padding:0 18px 32px; margin:auto; color:var(--muted); font-size:.85em; }
+  .summary-list { display:grid; gap:10px; margin:16px 0; }
+  .summary-item { border:1px solid var(--border); padding:12px; border-radius:10px; }
+  .hidden { display:none !important; }
+  .tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+  .tab { flex:1; min-height:44px; border:2px solid var(--border); border-radius:10px; background:var(--surface); color:var(--text); font-weight:700; padding:8px 12px; }
+  .tab[aria-current="page"] { background:var(--primary); color:#fff; border-color:var(--primary); }
+  body.high-contrast .tab[aria-current="page"] { color:#000; }
+  .fb { border:2px solid var(--primary); border-radius:12px; padding:10px 14px; background:var(--surface); }
+  .ar { text-align:center; font-size:1.4em; color:var(--muted); line-height:1.2; }
+  .wfs { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin:14px 0; }
+  .wf { border:2px solid var(--text); border-radius:14px; padding:8px; background:var(--surface); font-size:.8em; }
+  .wf b { display:block; text-align:center; margin-bottom:6px; }
+  .wf div { border:1.5px dashed var(--muted); border-radius:6px; padding:5px 7px; margin-bottom:6px; color:var(--muted); }
+  .wf div.btn { border:2px solid var(--text); color:var(--text); font-weight:700; text-align:center; }
+  @media (max-width:760px) {
+    .layout { grid-template-columns:1fr; }
+    .hero { padding:16px; }
+    .hero p { display:none; }
+    .hero h1 { margin:4px 0; }
+    .panel { padding:18px; }
+    .header-inner { align-items:flex-start; }
+  }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition:none !important; scroll-behavior:auto !important; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="brand" aria-label="Você Cairia Nessa?">
+      <div class="brand-mark" aria-hidden="true">?</div>
+      <div>
+        <div class="brand-name">Você Cairia Nessa?</div>
+        <div class="brand-sub">Simulador de segurança digital</div>
+      </div>
+    </div>
+    <div class="tools" aria-label="Opções de acessibilidade">
+      <button class="tool-btn" id="decreaseText" type="button" aria-label="Diminuir tamanho do texto">A−</button>
+      <button class="tool-btn" id="increaseText" type="button" aria-label="Aumentar tamanho do texto">A+</button>
+      <button class="tool-btn" id="contrastToggle" type="button" aria-pressed="false">Alto contraste</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="hero-kicker">Aprenda praticando</div>
+    <h1>Você cairia nessa?</h1>
+    <p>Mensagens suspeitas podem parecer verdadeiras. Analise cada situação, escolha como agiria e descubra sinais que ajudam a proteger seu dinheiro, seus dados e seus dispositivos.</p>
+    <div class="hero-note">Não existe vergonha em ter dúvidas. O objetivo é aprender, não julgar.</div>
+  </section>
+
+  <nav class="tabs" aria-label="Partes do protótipo"><button class="tab" data-v="sim" type="button" aria-current="page">Simulador</button><button class="tab" data-v="fluxo" type="button">Fluxo</button><button class="tab" data-v="cen" type="button">Cenários</button><button class="tab" data-v="telas" type="button">Telas</button></nav>
+  <section class="panel hidden" id="docView"></section>
+  <div class="layout" id="layout">
+    <section class="panel" aria-live="polite">
+      <div class="progress-top">
+        <span id="progressLabel">Situação 1 de 6</span>
+        <span id="scoreLabel">Escolhas seguras: 0</span>
+      </div>
+      <div class="progress-track" role="progressbar" aria-label="Progresso das situações" aria-valuemin="0" aria-valuemax="6" aria-valuenow="0" id="progressBar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+
+      <div id="scenarioView">
+        <div id="scenarioTags"></div>
+        <h2 id="scenarioTitle">Mensagem de um familiar</h2>
+        <p id="scenarioIntro" class="muted"></p>
+        <div id="scenarioMessage" class="scenario-message"></div>
+        <p><strong>O que você faria?</strong></p>
+        <div class="choice-list" id="choices"></div>
+        <div id="feedback" class="feedback hidden" role="status" aria-live="polite"></div>
+        <div class="actions">
+          <button class="primary-btn hidden" id="nextBtn" type="button">Próxima situação →</button>
+          <button class="secondary-btn" id="restartBtn" type="button">Recomeçar</button>
+        </div>
+      </div>
+
+      <div id="resultView" class="hidden">
+        <h2>Você concluiu o simulador!</h2>
+        <p id="resultMessage"></p>
+        <div class="summary-list" id="resultSummary"></div>
+        <h3>Três perguntas para lembrar antes de agir</h3>
+        <div class="question"><strong>1. É realmente quem diz ser?</strong>Confirme por outro canal conhecido, principalmente quando houver pedido inesperado.</div>
+        <div class="question"><strong>2. Estão pedindo dinheiro, códigos ou dados pessoais?</strong>Não compartilhe códigos de verificação nem informações sensíveis.</div>
+        <div class="question"><strong>3. Estão pressionando você a agir rápido?</strong>Pare, respire e confira antes de clicar, pagar ou responder.</div>
+        <div class="actions"><button class="primary-btn" id="playAgainBtn" type="button">Jogar novamente</button></div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <div class="side-section">
+        <h2>Seu caminho</h2>
+        <p class="muted small">Você pode abrir uma situação pelo menu. Cada escolha mostra uma explicação educativa.</p>
+        <nav class="scenario-nav" id="scenarioNav" aria-label="Escolher situação"></nav>
+      </div>
+      <div class="side-section">
+        <h3>Fique atento a estes sinais</h3>
+        <ul class="mini-list">
+          <li>Urgência ou ameaça para decidir rápido.</li>
+          <li>Pedido inesperado de dinheiro ou código.</li>
+          <li>Link estranho ou remetente desconhecido.</li>
+          <li>Oferta boa demais ou mensagem fora do normal.</li>
+        </ul>
+      </div>
+      <div class="side-section">
+        <h3>Se você já caiu em um golpe</h3>
+        <p class="small">Interrompa o contato, não envie mais dinheiro, procure seu banco pelos canais oficiais, troque senhas afetadas e guarde provas. Se houve transferência via Pix, pergunte ao banco sobre contestação e mecanismos disponíveis, como o MED quando aplicável. Considere registrar boletim de ocorrência.</p>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<footer>
+  <strong>Projeto Integrador III — PI-III</strong><br>
+  <strong>Produto:</strong> Você Cairia Nessa? — Simulador de Segurança Digital<br>
+  <strong>Integrantes:</strong> Wislainy Fontes dos Santos • Tawany Fontes dos Santos • João Victor Lacerda Ribeiro<br>
+  Educação para a segurança digital. Este simulador é educativo e não substitui orientação do banco ou de autoridades competentes.
+</footer>
+
+<script>
+const scenarios = [
+  {
+    title: "Um familiar manda mensagem de um número novo",
+    tags: ["Fraudes digitais", "Engenharia social"],
+    intro: "Você recebe uma mensagem que parece ser de alguém da família. A pessoa diz que trocou de número e pede dinheiro com urgência.",
+    message: "“Oi! Meu celular antigo estragou. Salva este número novo e me faz um Pix rapidinho? Depois explico. É urgente!”",
+    choices: [
+      { text: "Fazer o Pix, porque parece ser alguém conhecido.", correct: false, title: "Pare e confirme primeiro", explanation: "Golpistas podem fingir ser familiares e usar urgência para impedir a checagem.", action: "Ligue para o número que você já conhecia ou confirme pessoalmente com a pessoa/família. Não use apenas o contato novo para confirmar." },
+      { text: "Confirmar por uma ligação ou outro contato que eu já conheço.", correct: true, title: "Boa escolha!", explanation: "Confirmar por um canal independente ajuda a verificar a identidade da pessoa.", action: "Antes de transferir, converse com o familiar pelo número antigo ou combine uma palavra de segurança com a família." },
+      { text: "Responder pedindo mais dados pessoais para ver se a pessoa sabe.", correct: false, title: "Isso não é suficiente", explanation: "Dados pessoais podem ter sido obtidos em vazamentos ou redes sociais, então não provam a identidade.", action: "Prefira ligar para um contato conhecido e não revele informações adicionais durante a conversa suspeita." }
+    ]
+  },
+  {
+    title: "Mensagem falsa do banco",
+    tags: ["Fraudes digitais", "Links suspeitos"],
+    intro: "Chega um SMS dizendo que sua conta será bloqueada se você não confirmar seus dados em um link.",
+    message: "“ALERTA: acesso suspeito! Sua conta será bloqueada hoje. Clique aqui para regularizar: banco-seguro-exemplo.com”",
+    choices: [
+      { text: "Abrir o link e digitar meus dados para evitar o bloqueio.", correct: false, title: "Cuidado com links recebidos", explanation: "Mensagens falsas podem imitar bancos para roubar senhas e dados.", action: "Não clique. Abra o aplicativo que você já usa ou digite o endereço oficial do banco por conta própria. Se houver dúvida, ligue para o número oficial." },
+      { text: "Ignorar o link e verificar pelo aplicativo oficial do banco.", correct: true, title: "Boa escolha!", explanation: "Usar o app ou site oficial, acessado por você, reduz o risco de cair em uma página falsa.", action: "Não informe senha, token ou código em links recebidos por mensagem." },
+      { text: "Encaminhar o link para amigos perguntando se é verdadeiro.", correct: false, title: "Melhor não espalhar o link", explanation: "Encaminhar pode expor outras pessoas ao risco e não confirma que a mensagem é legítima.", action: "Verifique diretamente com o banco por um canal oficial e apague ou denuncie a mensagem suspeita." }
+    ]
+  },
+  {
+    title: "Um arquivo ou link inesperado",
+    tags: ["Malware", "Segurança do dispositivo"],
+    intro: "Uma pessoa que você não conhece envia um arquivo dizendo que é uma foto, uma cobrança ou um comprovante importante.",
+    message: "“Veja o documento anexado e confirme agora. É importante!” O arquivo veio de um remetente inesperado.",
+    choices: [
+      { text: "Abrir o arquivo para descobrir do que se trata.", correct: false, title: "Não abra sem verificar", explanation: "Arquivos e links inesperados podem levar a páginas maliciosas ou instalar programas nocivos.", action: "Confirme com o remetente por um canal confiável, mantenha o sistema atualizado e use ferramentas de segurança. Não habilite macros ou permissões sem entender o motivo." },
+      { text: "Não abrir e verificar o remetente por outro canal.", correct: true, title: "Boa escolha!", explanation: "Desconfiar de anexos inesperados é uma forma importante de reduzir o risco de malware.", action: "Se abriu algo suspeito, desconecte-se se necessário, execute uma verificação de segurança e procure suporte técnico confiável." },
+      { text: "Baixar o arquivo, mas só abrir depois de encaminhar para alguém.", correct: false, title: "Encaminhar não torna o arquivo seguro", explanation: "O arquivo continua podendo ser malicioso, mesmo se você não o abrir imediatamente.", action: "Evite baixar e compartilhar anexos suspeitos. Apague a mensagem e faça uma verificação por meios confiáveis." }
+    ]
+  },
+  {
+    title: "Alguém pede seu código de verificação",
+    tags: ["Proteção de contas", "Dados pessoais"],
+    intro: "Uma pessoa diz ser do suporte e afirma que precisa do código enviado ao seu celular para proteger sua conta.",
+    message: "“Para confirmar que sua conta é sua, me diga o código de seis dígitos que acabou de chegar.”",
+    choices: [
+      { text: "Passar o código, porque a pessoa disse ser do suporte.", correct: false, title: "Nunca compartilhe o código", explanation: "Códigos de verificação podem permitir que outra pessoa entre na sua conta ou a tome para si.", action: "Não informe o código a ninguém. Encerre o contato e procure o suporte pelo aplicativo ou site oficial." },
+      { text: "Não compartilhar e procurar o suporte no canal oficial.", correct: true, title: "Boa escolha!", explanation: "O código é para você usar no processo que iniciou, não para entregar a outra pessoa.", action: "Se já compartilhou, troque a senha, encerre sessões desconhecidas e proteja a conta pelos canais oficiais." },
+      { text: "Enviar só os primeiros números do código.", correct: false, title: "Não compartilhe nenhuma parte", explanation: "Mesmo informações parciais podem ajudar um golpista a conduzir a fraude.", action: "Não envie códigos, senhas ou tokens. Desconfie de contatos que pedem essas informações." }
+    ]
+  },
+  {
+    title: "Uma pessoa da internet pede dinheiro",
+    tags: ["IA e conteúdo falso", "Fraudes digitais"],
+    intro: "Você conversa há semanas com alguém que conheceu na internet. Ele já enviou fotos e um vídeo curto falando com você. Agora pede ajuda com dinheiro.",
+    message: "“Meu amor, comprei a passagem para te ver, mas meu cartão bloqueou. Pode me mandar R$ 2.500 por Pix? Chego sábado!”",
+    choices: [
+      { text: "Enviar o dinheiro, porque já conversamos há semanas.", correct: false, title: "Confiança construída aos poucos também engana", explanation: "Golpistas investem tempo em carinho e promessas antes de pedir dinheiro.", action: "Não envie dinheiro a quem você nunca encontrou pessoalmente. Converse com alguém de confiança antes de decidir." },
+      { text: "Confirmar a identidade por outro meio e conversar com um familiar.", correct: true, title: "Boa escolha!", explanation: "Fotos, vídeos e vozes podem ser falsificados com inteligência artificial. Uma segunda opinião ajuda a quebrar o encanto.", action: "Peça uma chamada de vídeo ao vivo, pesquise o perfil (data de criação, publicações antigas) e, na dúvida, não envie dinheiro." },
+      { text: "Pedir mais uma foto ou vídeo e confiar se chegar.", correct: false, title: "Ainda pode ser falso", explanation: "Mais conteúdo enviado no mesmo canal não prova quem está do outro lado.", action: "Use um meio independente de confirmação, como videochamada ao vivo, e peça ajuda a um familiar." }
+    ]
+  },
+  {
+    title: "Acho que caí em um golpe. E agora?",
+    tags: ["Reação e orientação", "Prevenção"],
+    intro: "Você clicou em um link suspeito ou fez uma transferência e agora percebeu sinais de golpe. O que fazer primeiro?",
+    message: "“Para recuperar seu dinheiro, pague uma taxa agora e envie seus dados bancários.” A pessoa continua pressionando você.",
+    choices: [
+      { text: "Pagar a taxa para tentar recuperar o dinheiro rapidamente.", correct: false, title: "Não envie mais dinheiro", explanation: "A promessa de recuperar valores mediante nova taxa pode ser outro golpe.", action: "Interrompa o contato. Procure seu banco pelos canais oficiais, explique o ocorrido e pergunte sobre contestação e medidas disponíveis." },
+      { text: "Parar o contato, avisar o banco e guardar as provas.", correct: true, title: "Boa escolha!", explanation: "Agir rapidamente pode ajudar a proteger contas e iniciar procedimentos de contestação.", action: "Troque senhas afetadas, encerre sessões suspeitas, guarde mensagens e comprovantes, considere registrar boletim de ocorrência e peça orientação oficial. Em caso de Pix, consulte o banco sobre o MED e a elegibilidade." },
+      { text: "Apagar todas as mensagens e esperar para ver se algo acontece.", correct: false, title: "Guarde as evidências", explanation: "Mensagens, comprovantes, números e horários podem ajudar o banco e as autoridades a entender o ocorrido.", action: "Não responda mais ao golpista, preserve as provas e entre em contato com o banco por um canal oficial." }
+    ]
+  }
+];
+
+const extra = [
+  { chan: "WhatsApp · Número desconhecido", signs: ["Número novo dizendo ser da família", "Pedido de dinheiro por Pix", "Urgência: “depois explico”"], help: "Se já pagou: app do banco (contestar o Pix) e boletim de ocorrência.", src: "CERT.br, Golpes: Não se Deixe Enganar (2026)", reply: "Valeu! Já paguei o boleto. Só mais um favor: manda mais R$ 500 pra outra conta?" },
+  { chan: "SMS · BANCO", signs: ["Alerta de bloqueio com urgência", "Link enviado por SMS", "Pede dados pelo link, não pelo app"], help: "Canais oficiais do seu banco: aplicativo e telefone do cartão.", src: "Ministério das Comunicações, Ataque Phishing (2026)", reply: "Dados recebidos. Para concluir, informe também o código que chegou por SMS." },
+  { chan: "WhatsApp · Número desconhecido", signs: ["Remetente desconhecido", "Arquivo ou link inesperado", "Pressão: “confirme agora”"], help: "Se abriu: rode o antivírus, procure suporte de confiança e troque as senhas.", src: "CERT.br, Códigos Maliciosos (2023)", reply: "Abrindo arquivo... (Em um golpe real, um programa espião começaria a rodar no seu celular.)" },
+  { chan: "Ligação · “Suporte”", signs: ["Pedido de código de verificação", "Pessoa diz ser do suporte", "Urgência para “proteger a conta”"], help: "Suporte oficial, pelo aplicativo ou site do serviço.", src: "CERT.br, Autenticação (2022)", reply: "Código recebido. Sua conta já foi acessada em outro aparelho." },
+  { chan: "Aplicativo de conversa · Carlos, 62 anos", signs: ["Relação que cresce rápido na internet", "Carinho e promessas antes do pedido", "Pedido de dinheiro com urgência"], help: "Denuncie o perfil na plataforma. Se pagou, procure seu banco e registre o BO.", src: "CERT.br, Golpes e Inteligência Artificial (2026)", reply: "Obrigado, meu amor! Só mais uma coisa: surgiu uma taxa de embarque de R$ 900." },
+  { chan: "WhatsApp · “Central de recuperação”", signs: ["Cobrança de nova taxa para “recuperar” o dinheiro", "Pressão contínua", "Pedido de dados bancários"], help: "App do banco, delegacia (BO online), Procon e Banco Central.", src: "CERT.br, Golpes: Caiu? Veja o que Fazer (2026)", reply: "Quase pronto! Só falta você enviar a senha do aplicativo para liberar o valor." }
+];
+scenarios.forEach((sc, i) => Object.assign(sc, extra[i]));
+let orders = [];
+const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const newOrders = () => { orders = scenarios.map(sc => shuffle(sc.choices.map((_, i) => i))); };
+const line = (label, text) => { const p = document.createElement("p"); const b = document.createElement("strong"); b.textContent = label; p.append(b, document.createTextNode(text)); return p; };
+let current = 0;
+let answered = {};
+let textSize = 18;
+const $ = (id) => document.getElementById(id);
+
+function renderNav() {
+  const nav = $("scenarioNav");
+  nav.innerHTML = "";
+  scenarios.forEach((scenario, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "nav-btn" + (index === current ? " active" : "");
+    button.setAttribute("aria-current", index === current ? "step" : "false");
+    const number = document.createElement("span");
+    number.className = "nav-number";
+    number.textContent = answered[index] ? "✓" : String(index + 1);
+    const label = document.createElement("span");
+    label.className = "nav-label";
+    label.textContent = scenario.title;
+    button.append(number, label);
+    button.addEventListener("click", () => showScenario(index));
+    nav.appendChild(button);
+  });
+}
+function updateProgress() {
+  const done = Object.keys(answered).length;
+  $("progressLabel").textContent = `Situação ${current + 1} de ${scenarios.length}`;
+  $("scoreLabel").textContent = `Escolhas seguras: ${Object.values(answered).filter(a => a.correct).length}`;
+  $("progressFill").style.width = `${(done / scenarios.length) * 100}%`;
+  $("progressBar").setAttribute("aria-valuenow", done);
+}
+function showScenario(index) {
+  current = index;
+  $("scenarioView").classList.remove("hidden");
+  $("resultView").classList.add("hidden");
+  const scenario = scenarios[current];
+  $("scenarioTitle").textContent = scenario.title;
+  $("scenarioIntro").textContent = scenario.intro;
+  const msg = $("scenarioMessage");
+  msg.innerHTML = "";
+  const from = document.createElement("div"); from.className = "from"; from.textContent = scenario.chan;
+  const bub = document.createElement("div"); bub.className = "bub"; bub.textContent = scenario.message;
+  const note = document.createElement("div"); note.className = "fake"; note.textContent = "Mensagem de exemplo, fictícia.";
+  msg.append(from, bub, note);
+  $("scenarioTags").innerHTML = "";
+  scenario.tags.forEach(tag => {
+    const span = document.createElement("span");
+    span.className = "tag";
+    span.textContent = tag;
+    $("scenarioTags").appendChild(span);
+  });
+  $("choices").innerHTML = "";
+  orders[current].forEach((idx, pos) => {
+    const choice = scenario.choices[idx];
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "choice-btn";
+    button.textContent = `${String.fromCharCode(65 + pos)}. ${choice.text}`;
+    button.addEventListener("click", () => answerScenario(idx));
+    if (answered[current]) button.disabled = true;
+    $("choices").appendChild(button);
+  });
+  const feedback = $("feedback");
+  feedback.className = "feedback hidden";
+  feedback.innerHTML = "";
+  $("nextBtn").classList.toggle("hidden", !answered[current]);
+  if (answered[current]) showFeedback(answered[current].choiceIndex);
+  $("nextBtn").textContent = current === scenarios.length - 1 ? "Ver meu resultado →" : "Próxima situação →";
+  updateProgress();
+  renderNav();
+}
+function showFeedback(choiceIndex) {
+  const choice = scenarios[current].choices[choiceIndex];
+  const feedback = $("feedback");
+  feedback.className = "feedback " + (choice.correct ? "good" : "warn");
+  feedback.innerHTML = "";
+  const title = document.createElement("h3");
+  title.textContent = choice.title;
+  const p1 = document.createElement("p");
+  p1.textContent = choice.explanation;
+  const p2 = document.createElement("p");
+  const strong = document.createElement("strong");
+  strong.textContent = "O que fazer: ";
+  p2.append(strong, document.createTextNode(choice.action));
+  const sc = scenarios[current];
+  const src = document.createElement("p"); src.className = "small"; src.textContent = "Fonte: " + sc.src;
+  feedback.append(title, p1, p2, line("Sinais de alerta: ", sc.signs.join("; ") + "."), line("Onde buscar ajuda: ", sc.help), src);
+  if (!choice.correct) {
+    const n = document.createElement("div"); n.className = "fake"; n.textContent = "Se fosse um golpe real, a conversa continuaria assim:";
+    const b = document.createElement("div"); b.className = "bub scam"; b.textContent = "Golpista: “" + sc.reply + "”";
+    $("scenarioMessage").append(n, b);
+  }
+}
+function answerScenario(choiceIndex) {
+  if (answered[current]) return;
+  const choice = scenarios[current].choices[choiceIndex];
+  answered[current] = { correct: choice.correct, choiceIndex };
+  Array.from($("choices").children).forEach(button => button.disabled = true);
+  showFeedback(choiceIndex);
+  $("nextBtn").classList.remove("hidden");
+  $("nextBtn").textContent = current === scenarios.length - 1 ? "Ver meu resultado →" : "Próxima situação →";
+  updateProgress();
+  renderNav();
+}
+function nextScenario() {
+  if (!answered[current]) return;
+  if (current < scenarios.length - 1) {
+    showScenario(current + 1);
+  } else {
+    showResults();
+  }
+}
+function showResults() {
+  $("scenarioView").classList.add("hidden");
+  $("resultView").classList.remove("hidden");
+  const correct = Object.values(answered).filter(a => a.correct).length;
+  $("resultMessage").textContent = `Você escolheu a opção mais segura em ${correct} de ${scenarios.length} situações. Use o resultado como oportunidade de aprendizagem: reconhecer sinais e confirmar informações são habilidades que melhoram com a prática.`;
+  $("resultSummary").innerHTML = "";
+  scenarios.forEach((scenario, index) => {
+    const result = answered[index];
+    const item = document.createElement("div");
+    item.className = "summary-item";
+    const strong = document.createElement("strong");
+    strong.textContent = `${index + 1}. ${scenario.title}`;
+    const p = document.createElement("p");
+    p.className = "small";
+    p.textContent = result ? (result.correct ? "Resposta segura escolhida." : "Revise a orientação desta situação.") : "Situação ainda não respondida.";
+    item.append(strong, p);
+    $("resultSummary").appendChild(item);
+  });
+  renderNav();
+}
+function restart() {
+  newOrders();
+  current = 0;
+  answered = {};
+  showScenario(0);
+}
+$("nextBtn").addEventListener("click", nextScenario);
+$("restartBtn").addEventListener("click", restart);
+$("playAgainBtn").addEventListener("click", restart);
+$("increaseText").addEventListener("click", () => {
+  textSize = Math.min(26, textSize + 2);
+  document.body.style.fontSize = textSize + "px";
+});
+$("decreaseText").addEventListener("click", () => {
+  textSize = Math.max(16, textSize - 2);
+  document.body.style.fontSize = textSize + "px";
+});
+$("contrastToggle").addEventListener("click", () => {
+  const enabled = document.body.classList.toggle("high-contrast");
+  $("contrastToggle").setAttribute("aria-pressed", String(enabled));
+});
+const wf = (t, b) => `<div class="wf"><b>${t}</b>${b.map(x => x[0] === "*" ? `<div class="btn">${x.slice(1)}</div>` : `<div>${x}</div>`).join("")}</div>`;
+const V = {
+  fluxo: () => `<h2>Fluxo geral</h2><p class="muted">Caminho que a pessoa percorre no simulador.</p>` + [["Início", "Apresenta o simulador e o aviso de que não há julgamento."], ["Situação (1 a 6)", "Mostra uma mensagem fictícia, como no celular, e 3 decisões."], ["Decisão", "A pessoa escolhe o que faria. A ordem das opções muda a cada jogo."], ["Feedback", "Mostra o resultado, o que fazer, os sinais de alerta e onde buscar ajuda. Se a escolha foi arriscada, mostra como o golpe continuaria."], ["Ainda há situações?", "Sim: segue para a próxima. Não: vai para o resumo."], ["Resumo", "Mostra as escolhas seguras, 3 perguntas antes de agir e “Jogar novamente”."]].map((x, k, a) => `<div class="fb"><h3>${x[0]}</h3>${x[1]}</div>${k < a.length - 1 ? '<div class="ar" aria-hidden="true">↓</div>' : ""}`).join("") + `<h3 style="margin-top:18px">Os 5 eixos no simulador</h3><ul class="mini-list"><li>Segurança digital e principais riscos: situação 4.</li><li>Golpes e fraudes digitais: situações 1, 2 e 5.</li><li>Malwares e ameaças: situação 3.</li><li>Prevenção e boas práticas: “O que fazer” de cada feedback.</li><li>Identificação, reação e orientação: sinais de alerta, onde buscar ajuda e situação 6.</li></ul>`,
+  cen: () => `<h2>Cenários e decisões</h2><p class="muted">As 6 situações, as decisões possíveis e o feedback de cada uma.</p><div class="summary-list">` + scenarios.map((c, k) => `<div class="summary-item"><strong>${k + 1}. ${c.title}</strong><p class="small">${c.tags.join(" · ")}</p><p>${c.message}</p><ul class="mini-list">${c.choices.map(o => `<li><b>${o.correct ? "✔ Segura" : "✖ Arriscada"}:</b> ${o.text} ${o.explanation}</li>`).join("")}</ul></div>`).join("") + `</div>`,
+  telas: () => `<h2>Telas (wireframes)</h2><p class="muted">Esboço das 4 telas principais.</p><div class="wfs">` + wf("Abertura", ["Título do simulador", "Aviso: sem julgamento", "Situação 1 de 6 (começa direto)"]) + wf("Situação", ["Situação 1 de 6", "Canal e remetente", "Mensagem fictícia", "*Opção A", "*Opção B", "*Opção C"]) + wf("Feedback", ["✔ ou ✖ + título", "O que fazer", "Sinais de alerta", "Onde buscar ajuda", "Conversa do golpista (se arriscou)", "*Próxima situação"]) + wf("Resumo", ["Escolhas seguras: X de 6", "Resumo por situação", "3 perguntas antes de agir", "*Jogar novamente"]) + `</div><p class="small muted">Em todas as telas: A−, A+ e alto contraste.</p>`
+};
+document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => {
+  const v = b.dataset.v;
+  document.querySelectorAll(".tab").forEach(x => x.removeAttribute("aria-current"));
+  b.setAttribute("aria-current", "page");
+  $("layout").classList.toggle("hidden", v !== "sim");
+  $("docView").classList.toggle("hidden", v === "sim");
+  if (v !== "sim") $("docView").innerHTML = V[v]();
+}));
+newOrders();
+showScenario(0);
+</script>
+</body>
+</html>
